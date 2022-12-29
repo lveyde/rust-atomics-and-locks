@@ -6,10 +6,18 @@ static mut DATA: String = String::new();
 static LOCKED: AtomicBool = AtomicBool::new(false);
 
 fn f() {
-    if LOCKED.compare_exchange(false, true, Acquire, Relaxed).is_ok() {
+    if LOCKED
+        .compare_exchange(false, true, Acquire, Relaxed)
+        .is_ok()
+    {
         // Safety: We hold the exclusive lock, so nothing else is accessing DATA.
         unsafe { DATA.push('!') };
         LOCKED.store(false, Release);
+    } else {
+        println!(
+            "{:?} Error - LOCKED is already set to true.",
+            thread::current().id()
+        );
     }
 }
 
@@ -19,6 +27,7 @@ fn main() {
             s.spawn(f);
         }
     });
+    println!("{}, {}", unsafe { &DATA }, unsafe { (&DATA).len() });
     // DATA now contains at least one exclamation mark (and maybe more).
     assert!(unsafe { DATA.len() } > 0);
     assert!(unsafe { DATA.chars().all(|c| c == '!') });
