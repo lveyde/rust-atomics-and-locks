@@ -6,19 +6,20 @@ static mut DATA: String = String::new();
 static LOCKED: AtomicBool = AtomicBool::new(false);
 
 fn f() {
+    let thread_id = thread::current().id();
+    println!("{:?} Started.", &thread_id);
     if LOCKED
         .compare_exchange(false, true, Acquire, Relaxed)
         .is_ok()
     {
         // Safety: We hold the exclusive lock, so nothing else is accessing DATA.
         unsafe { DATA.push('!') };
+        println!("{:?} Updated DATA.", &thread_id);
         LOCKED.store(false, Release);
     } else {
-        println!(
-            "{:?} Error - LOCKED is already set to true.",
-            thread::current().id()
-        );
+        println!("{:?} Error - LOCKED is already set to true.", &thread_id);
     }
+    println!("{:?} Finished.", &thread_id);
 }
 
 fn main() {
