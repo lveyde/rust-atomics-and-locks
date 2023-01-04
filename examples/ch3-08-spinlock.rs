@@ -6,13 +6,21 @@ static mut DATA: String = String::new();
 static LOCKED: AtomicBool = AtomicBool::new(false);
 
 fn f() {
-    if LOCKED.compare_exchange(false, true, Acquire, Relaxed).is_err() {
-        println!("{:?} Acquiring lock...", thread::current().id());
+    let thread_id = thread::current().id();
+    println!("{:?} Started.", &thread_id);
+    while LOCKED
+        .compare_exchange(false, true, Acquire, Relaxed)
+        .is_err()
+    {
+        println!("{:?} Acquiring lock...", &thread_id);
     }
+    println!("{:?} Acquired lock.", &thread_id);
     // Safety: We hold the exclusive lock, so nothing else is accessing DATA.
-    println!("{:?} Updating...", thread::current().id());
+    println!("{:?} Updating DATA...", &thread_id);
     unsafe { DATA.push('!') };
+    println!("{:?} Updated DATA.", &thread_id);
     LOCKED.store(false, Release);
+    println!("{:?} Finished.", &thread_id);
 }
 
 fn main() {
